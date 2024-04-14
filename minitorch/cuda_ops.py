@@ -442,39 +442,30 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     #  Implement for Task 3.4.
-    a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
-    b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
-    BLOCK_DIM = 32
 
-    a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
-    b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
-
-    batch = cuda.blockIdx.z
-    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    pi = cuda.threadIdx.x
-    pj = cuda.threadIdx.y
-
-    accum = 0.0
+    acc = 0.0
+    # Move across shared dimension by block dim.
     for k_start in range(0, a_shape[2], BLOCK_DIM):
         k = k_start + pj
         if i < a_shape[1] and k < a_shape[2]:
+            # Copy into shared memory for a matrix.
             a_shared[pi, pj] = a_storage[
-                a_batch_stride * batch + i * a_strides[1] + k * a_strides[2]
+                a_batch_stride * batch + a_strides[1] * i + a_strides[2] * k
             ]
         k = k_start + pi
-        if k < b_shape[2] and j < b_shape[1]:
+        if j < b_shape[2] and k < b_shape[1]:
+            # Copy into shared memory for b matrix
             b_shared[pi, pj] = b_storage[
-                b_batch_stride * batch + k * b_strides[1] + j * b_strides[2]
+                b_batch_stride * batch + b_strides[1] * k + b_strides[2] * j
             ]
         cuda.syncthreads()
-
-        for k in range(BLOCK_DIM):
-            if (k_start + k) < a_shape[2]:
-                accum += a_shared[pi, k] * b_shared[k, pj]
-
+        # Compute the dot produce for position c[i, j] and accumulate the half of results
+        for z in range(BLOCK_DIM):
+            if (k_start + z) < a_shape[2]:
+                acc += a_shared[pi, z] * b_shared[z, pj]
     if i < out_shape[1] and j < out_shape[2]:
-        out[out_strides[0] * batch + out_strides[1] * i + out_strides[2] * j] = accum
+        # assign results to the output
+        out[out_strides[0] * batch + out_strides[1] * i + out_strides[2] * j] = acc
 
 
 tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
