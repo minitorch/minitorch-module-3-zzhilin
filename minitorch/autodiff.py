@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, Tuple, List
 
 from typing_extensions import Protocol
 
@@ -22,7 +22,13 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # Implement for Task 1.1.
+    vals1 = [v for v in vals]
+    vals2 = [v for v in vals]
+    vals1[arg] = vals1[arg] + epsilon
+    vals2[arg] = vals2[arg] - epsilon
+    delta = f(*vals1) - f(*vals2)
+    return delta / (2.0 * epsilon)
 
 
 variable_count = 1
@@ -60,7 +66,22 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # Implement for Task 1.4.
+    order: List[Variable] = []
+    visited = set()
+
+    def visit(v: Variable) -> None:
+        if v.unique_id in visited or v.is_constant():
+            return
+        if not v.is_leaf():
+            for p in v.parents:
+                if not p.is_constant():
+                    visit(p)
+        visited.add(v.unique_id)
+        order.insert(0, v)
+
+    visit(variable)
+    return order
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -70,11 +91,30 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     Args:
         variable: The right-most variable
-        deriv  : Its derivative that we want to propagate backward to the leaves.
+        deriv: Its derivative that we want to propagate backward to the leaves.
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # Implement for Task 1.4.
+    # get computational graph
+    q = topological_sort(variable)
+    # store computational derivatives for each variable
+    derivatives = {}
+    derivatives[variable.unique_id] = deriv
+
+    for v in q:
+        deriv = derivatives[v.unique_id]
+        # if leaf, accumulate derivative
+        if v.is_leaf():
+            v.accumulate_derivative(deriv)
+        else:
+            # chain rule
+            # p stands for parent
+            for p, d in v.chain_rule(deriv):
+                if p.is_constant():
+                    continue
+                derivatives.setdefault(p.unique_id, 0.0)
+                derivatives[p.unique_id] = derivatives[p.unique_id] + d
 
 
 @dataclass

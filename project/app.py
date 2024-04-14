@@ -1,5 +1,11 @@
 from argparse import ArgumentParser
+import sys, os
 
+# Get the absolute path of the parent directory
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
 import streamlit as st
 from interface.streamlit_utils import get_img_tag
 from interface.train import render_train_interface

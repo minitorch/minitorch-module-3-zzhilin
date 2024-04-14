@@ -1,7 +1,13 @@
 import random
 
 import numba
+import sys, os
 
+# Get the absolute path of the parent directory
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
 import minitorch
 
 datasets = minitorch.datasets
@@ -30,7 +36,10 @@ class Network(minitorch.Module):
 
     def forward(self, x):
         # TODO: Implement for Task 3.5.
-        raise NotImplementedError("Need to implement for Task 3.5")
+        h = self.layer1.forward(x).relu()
+        h = self.layer2.forward(h).relu()
+        return self.layer3.forward(h).sigmoid()
+
 
 
 class Linear(minitorch.Module):
@@ -44,7 +53,8 @@ class Linear(minitorch.Module):
 
     def forward(self, x):
         # TODO: Implement for Task 3.5.
-        raise NotImplementedError("Need to implement for Task 3.5")
+        batch, in_size = x.shape
+        return x.view(batch, in_size) @ self.weights.value + self.bias.value
 
 
 class FastTrain:
@@ -111,6 +121,11 @@ if __name__ == "__main__":
     parser.add_argument("--PLOT", default=False, help="dataset")
 
     args = parser.parse_args()
+
+
+    if args.BACKEND == "gpu" and not numba.cuda.is_available():
+        print("Error: CUDA is not available on this machine.")
+        sys.exit(1)
 
     PTS = args.PTS
 

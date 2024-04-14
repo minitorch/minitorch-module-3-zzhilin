@@ -6,6 +6,13 @@
 
 * Overview: https://minitorch.github.io/module3.html
 
+Task 3.3: CUDA Operations
+
+We can do even better than parallelization if we have access to specialized hardware. 
+This task asks you to build a GPU implementation of the backend operations. 
+It will be hard to equal what PyTorch does, 
+but if you are clever you can make these computations really fast (aim for 2x of task 3.1).
+
 
 You will need to modify `tensor_functions.py` slightly in this assignment.
 
